@@ -99,7 +99,7 @@ sol[aa1_, \[Phi]1_, S_,opts :OptionsPattern[]]:=
 Module[{ dmin},
 dmin=OptionValue[DMIN];
 (*Solving parabolic Hill's equations. Detect extrema in distance--useful for detecting the minimum binary separation.*)
-NDSolve[{eqnsEccentric[aa1, \[Phi]1, S, opts], WhenEvent[(x'[t]x[t]+y'[t] y[t])Sqrt[x[t]^2+y[t]^2]==0, Sow[t]]}, {x, x', y, y',  f}, {t,t0[aa1], -xend t0[aa1]}, Method->{"StiffnessSwitching", Method->{"ExplicitRungeKutta", Automatic},  Method->{"SymbolicProcessing"->0}}, MaxSteps->STEPS, PrecisionGoal->PGOAL, AccuracyGoal->AGOAL][[1]]
+NDSolve[{eqnsEccentric[aa1, \[Phi]1, S, opts](*, WhenEvent[(x'[t]x[t]+y'[t] y[t])Sqrt[x[t]^2+y[t]^2]\[Equal]0, Sow[t]]*)}, {x, x', y, y',  f}, {t,t0[aa1], -xend t0[aa1]}, Method->{"StiffnessSwitching", Method->{"ExplicitRungeKutta", Automatic},  Method->{"SymbolicProcessing"->0}}, MaxSteps->STEPS, PrecisionGoal->PGOAL, AccuracyGoal->AGOAL][[1]]
 ];
 Options[initConditions]={Q->QDEF, MR->MRDEF};
 initConditions[aa1_,\[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{ii, mr, q, r1, r2, ff0, xm1, ym1, ff01},
@@ -110,7 +110,7 @@ ff0=f0[aa1];
 ff01=Sqrt[2](1+Cos[ff0])^2/4;
 xm1=2mr^(1/3) ((- Sin[ff0])/(1+Cos[ff0])+(Cos[ff0]Sin[ff0]/(1+Cos[ff0])^2)) ff01;
 ym1=2mr^(1/3) ((Cos[ff0])/(1+Cos[ff0])+(Sin[ff0]^2/(1+Cos[ff0])^2)) ff01;
-r1={2 mr^(1/3) Cos[ff0]/(1+Cos[ff0])-q/(1+q) ii [[1]], 2 mr^(1/3) Sin[ff0]/(1+Cos[ff0])-q/(1+q) ii[[2]],0, xm1-q/(1+q) ii[[3]],ym1-q/(1+q) ii[[4]], 0};
+r1={2 mr^(1/3) Cos[ff0]/(1+Cos[ff0])-q/(1+q) ii[[1]], 2 mr^(1/3) Sin[ff0]/(1+Cos[ff0])-q/(1+q) ii[[2]],0, xm1-q/(1+q) ii[[3]],ym1-q/(1+q) ii[[4]], 0};
 r2={2 mr^(1/3) Cos[ff0]/(1+Cos[ff0])+1/(1+q) ii[[1]], 2 mr^(1/3) Sin[ff0]/(1+Cos[ff0])+1/(1+q) ii[[2]],0, xm1+1/(1+q) ii[[3]],ym1+1/(1+q) ii[[4]], 0};
 {r1, r2}
 ]
@@ -120,11 +120,11 @@ ss=sol[aa1, \[Phi]1, S, FilterRules[{opts}, Options[sol]]];
 mr=OptionValue[MR];
 q=OptionValue[Q];
 {xx, yy, xx1, yy1}={x, y, x', y'}/.ss;
-ff0=f0[ aa1];
+ff0=f0[aa1];
 ii=initConditions[aa1, \[Phi]1, S, opts][[1]];
-NDSolve[{D[r1x[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1x[t]+(q/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) xx[t],
-D[r1y[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1y[t]+(q/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) yy[t], r1x[t0[aa1]]==ii[[1]], 
-r1y[t0[aa1]]==ii[[2]], r1x'[t0[aa1]]==ii[[3]],  r1y'[t0[aa1]]==ii[[4]]}, 
+
+NDSolve[{D[r1x[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1x[t]+(q/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) xx[t],D[r1y[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1y[t]+(q/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) yy[t], 
+r1x[t0[aa1]]==ii[[1]], r1y[t0[aa1]]==ii[[2]], r1x'[t0[aa1]]==ii[[4]],  r1y'[t0[aa1]]==ii[[5]]}, 
 {r1x, r1y, r1x', r1y'}, {t, t0[aa1], -xend t0[aa1]}]
 ]
 Options[pos2]={Q->QDEF, EVEC->EVECDEF, MR->MRDEF};
@@ -140,32 +140,37 @@ ii=initConditions[aa1, \[Phi]1, S, opts][[2]];
 NDSolve[{D[r1x[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1x[t]-(1/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) xx[t],
 D[r1y[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1y[t]-(1/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) yy[t], 
 r1x[t0[aa1]]==ii[[1]], r1y[t0[aa1]]==ii[[2]],
-r1x'[t0[aa1]]==ii[[3]],  r1y'[t0[aa1]]==ii[[4]]}, {r1x, r1y, r1x', r1y'}, {t, t0[aa1], -xend t0[aa1]}]
+r1x'[t0[aa1]]==ii[[4]],  r1y'[t0[aa1]]==ii[[5]]}, {r1x, r1y, r1x', r1y'}, {t, t0[aa1], -xend t0[aa1]}]
 ]
 
 Options[posBound]={MR->MRDEF, Q->QDEF, EVEC->EVECDEF};
-posBound[aa1_, \[Phi]1_, S_, opts :OptionsPattern[]]:=Module[{q, mr, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1, ef,bound, Sq},
+posBound[aa1_, \[Phi]1_, S_, opts :OptionsPattern[]]:=Module[{q, mr, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1, ef,bound,pp},
 (*Print[FilterRules[opts, Options[sol]]];*)
 ef =enf[aa1, \[Phi]1, S, opts];
-If[sign[ef]<0, Return[pos1[aa1, \[Phi]1, S, opts], Return[pos2[aa1, \[Phi]1, S, opts]]]
-
+pp=If[ef<0, pos1[aa1, \[Phi]1, S, opts], pos2[aa1, \[Phi]1, S, opts]];
+pp
 ]
+
 Options[en1]={DMIN->DMINDEF, EVEC->EVECDEF};
-en1[t_, aa1_?NumericQ, \[Phi]1_?NumericQ, opts :OptionsPattern[]]:=(-1/DD[aa1] ((1+Cos[f[t]])^2/4 (x[t] Cos[f[t]]+y[t] Sin[f[t]])+(-Sin[f[t]]x'[t]+(1+Cos[f[t]])y'[t])/Sqrt[2])/.sol[aa1, \[Phi]1, opts])
+en1[t_, ss_, aa1_?NumericQ, \[Phi]1_?NumericQ, S_, opts :OptionsPattern[]]:=Module[{}, 
+(-1/DD[aa1] ((1+Cos[f[t]])^2/4 (x[t] Cos[f[t]]+y[t] Sin[f[t]])+(-Sin[f[t]]x'[t]+(1+Cos[f[t]])y'[t])/Sqrt[2])/.ss)
+]
+
 Options[enf]={DMIN->DMINDEF, EVEC->EVECDEF}
 enf[aa1_?NumericQ,\[Phi]1_?NumericQ, S_, opts:OptionsPattern[]]:=
 Module[{ss, filt, tt, tend, e1, e2,minSep, times, tmp},
 ss=sol[aa1, \[Phi]1, S, opts];
-
-tend=((x/.ss)[[1,1]][[2]]);
 tt=-xend t0[aa1];
-e1=-1/DD[aa1] ((1+Cos[f[tend]])^2/4 (x[tend] Cos[f[tend]]+y[tend] Sin[f[tend]])+(-Sin[f[tend]]x'[tend]+(1+Cos[f[tend]])y'[tend])/Sqrt[2])/.ss;
-tend=0.9 tend;
-e2=-1/DD[aa1] ((1+Cos[f[tend]])^2/4 (x[tend] Cos[f[tend]]+y[tend] Sin[f[tend]])+(-Sin[f[tend]]x'[tend]+(1+Cos[f[tend]])y'[tend])/Sqrt[2])/.ss;
-tend=tend/0.9;
-filt=((tend>=tt)&& ((Sqrt[x[tt]^2+y[tt]^2]>10/DD[aa1]/.ss)) &&(Abs[(e1-e2)/e2]<1.2));
+tend=((x/.ss)[[1,1]][[2]]);
+If[tend<tt, Return[-I, Module]];
 
-Piecewise[{{I, Not[filt]}}, (-1/DD[aa1] ((1+Cos[f[tt]])^2/4 (x[tt] Cos[f[tt]]+y[tt] Sin[f[tt]])+(-Sin[f[tt]]x'[tt]+(1+Cos[f[tt]])y'[tt])/Sqrt[2]))/.ss]
+e1=en1[tend, ss, aa1, \[Phi]1, S, opts];
+tend=0.9 tend;
+e2=en1[tend, ss, aa1, \[Phi]1, S, opts];
+tend=tend/0.9;
+filt=(((Sqrt[x[tt]^2+y[tt]^2]>10/DD[aa1]/.ss)) &&(Abs[(e1-e2)/e2]<1.2));
+
+Piecewise[{{I, Not[filt]}}, en1[tt, ss, aa1, \[Phi]1, S, opts]]
 ]
 
 Options[enfColl]={DMIN->DMINDEF, EVEC->EVECDEF}
@@ -189,13 +194,15 @@ Piecewise[{{{I, I}, Not[filt]}}, {(-1/DD[aa1] ((1+Cos[f[tt]])^2/4 (x[tt] Cos[f[t
 
 
 Options[enf2]={EVEC->EVECDEF, MR->MRDEF, Q->QDEF};
-enf2[aa1_, \[Phi]_, S_, opts :OptionsPattern[]]:=Module[{mr, sol1, sol2, solp1, solp2, teval}, 
+enf2[aa1_, \[Phi]_, S_, opts :OptionsPattern[]]:=Module[{mr, sol1, sol2, solp1, solp2, teval, p1}, 
 mr=OptionValue[MR];
 teval=-xend t0[aa1];
-sol1=r1x/.pos1[aa1,\[Phi] , S, opts][[1]];
-sol2=r1y/.pos1[aa1,\[Phi], S, opts][[1]];
-solp1=r1x'/.pos1[aa1, \[Phi], S, opts][[1]];
-solp2=r1y'/.pos1[aa1, \[Phi], S, opts][[1]];
+p1=pos1[aa1, \[Phi] , S, opts][[1]];
+sol1=r1x/.p1;
+sol2=r1y/.p1;
+solp1=r1x'/.p1;
+solp2=r1y'/.p1;
+Print[{sol1[t0[aa1]], sol2[t0[aa1]], solp1[t0[aa1]] , solp2[t0[aa1]]}];
 1/DD[aa1] (-mr/(sol1[teval]^2+sol2[teval]^2)^0.5+1/2 (solp1[teval]^2+solp2[teval]^2))(2 mr^(-1/3))
 ]
 
@@ -309,15 +316,15 @@ Print[pRange];
 p2=ParametricPlot[{x[-10^(t1)], y[-10^(t1)]}/.ss, {t1, Log10[-ttidal[aa1]], -2}, PlotRange->All, PlotStyle->{Purple, Dashed}];
 p3=ParametricPlot[{x[10^(t1)], y[10^(t1)]}/.ss, {t1, -2,Log10[- ttidal[aa1]]}, PlotRange->All, PlotStyle->{Red,Dashed}];
 
-Show[ p1(*, p2, p3*)]
+Show[ p1, p2, p3]
 ]
 
 Options[pComp]={MR->MRDEF, Q->QDEF};
 pComp[aa1_, \[Phi]1_,  S_, opts:OptionsPattern[]]:=Module[{ sol1, sol2, sol1b, sol2b, pa, pb, pc,pd, q, mr},
 mr=OptionValue[MR];
 q=OptionValue[Q];
-sol1=r1x/.posBound[aa1,\[Phi]1, S, MR->mr, Q->q][[1]];
-sol2=r1y/.posBound[aa1,\[Phi]1 , S, MR->mr, Q->q][[1]];
+sol1=r1x/.pos2[aa1,\[Phi]1, S, MR->mr, Q->q][[1]];
+sol2=r1y/.pos2[aa1,\[Phi]1 , S, MR->mr, Q->q][[1]];
 
 sol1b=r1x/.pos1[aa1,\[Phi]1, S, MR->mr, Q->q][[1]];
 sol2b=r1y/.pos1[aa1,\[Phi]1 , S, MR->mr, Q->q][[1]];
@@ -329,11 +336,20 @@ pd=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, -ttidal[aa1], -3
 Show[pa, pb, pc, pd, PlotRange->All]
 
 ]
-Begin["Private`"]
-PGOAL=17;
-AGOAL=17; 
+(*Begin["`Private`"]*)
+PGOAL=16;
+AGOAL=16; 
 STEPS=3 10^5;
 xend=50;
-End[];
+(*End[]*)
 
 EndPackage[]
+
+
+ppPlot[]
+
+
+enf2[-3, 0.7 \[Pi], 1]
+
+
+
