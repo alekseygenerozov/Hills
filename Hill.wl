@@ -1,6 +1,49 @@
 (* ::Package:: *)
 
 BeginPackage["Hill`"]
+eccentricAnomaly::usage="eccentricAnomaly[ma, e]--Converts mean anomaly (ma) to eccentric anomaly for an orbit with eccentricity e";
+trueAnomaly::usage="trueAnomaly[ma, e]--Converts mean anomaly (ma) to true anomaly for an orbit with eccentricity e";
+meanAnomaly;
+f0;
+t0;
+\[Omega];
+DD;
+v0;
+tt;
+f1;
+ftidal;
+ttidal::usage="ttidal[a]: Time at which the binary crosses the tidal sphere. a=Log[rp/rt]";
+initConditions;
+initEccentric;
+sol::usage="sol[a, \[Phi], S, EVEC->{0,0,0}]: Solve parabolic Hill's equations for binary separation (in units 
+of (m/M)^1/3 rp) as a function of time (in units of rp^1.5/(GM)^0.5))--See Sari et al 2010. a=Log[rp/rt], \[Phi]
+is the phase of the binary (mean anomaly in the case of an eccentric binary), and S is the orientation of the binary with respect to the 
+center of mass (1 is prograde -1 is retrograde). EVEC is the eccentricity vector of the binary.";
+pos1::usage="pos1[a, \[Phi], S, EVEC->{0,0,0}, MR->10^6, Q->1]: Position of star 1--Plug binary separation from 
+sol into the equation of motion for star 1. a=Log[rp/rt], \[Phi] is the phase of the binary (mean anomaly in the case of an eccentric binary), and S is the orientation of the binary with respect to the 
+center of mass (1 is prograde -1 is retrograde). EVEC is the eccentricity vector of the binary. MR is the ratio between the mass of the central 
+object and the binary. Q=m1/m2 (where m1 (m2) is the mass of star 1 (star 2).";
+pos2::usage="pos2[a, \[Phi], S, EVEC->{0,0,0}, MR->10^6, Q->1]: Position of star 2 (see documentation for pos1.";
+posBound::usage="posBound[a, \[Phi], S, EVEC->{0,0,0}, MR->10^6, Q->1]. Returns the position of the bound star.";
+posUnbound;
+en1;
+enf::usage="enf[a, \[Phi], S, EVEC->{0,0,0}]: Energy of the star 1 after encounter with central object in units of G m1 m2/abin (M/m)^(1/3))(Negative energies mean the star is bound).  a=Log[rp/rt], \[Phi]
+is the phase of the binary (mean anomaly in the case of an eccentric binary), and S is the orientation of the binary with respect to the 
+center of mass (1 is prograde -1 is retrograde). EVEC is the eccentricity vector of the binary. Return \[ImaginaryI] if binary is not separated, and -\[ImaginaryI] if the 
+the integration did not finish...";
+enfColl::usage="enfColl[a, \[Phi], S, EVEC->{0,0,0}]: See enf. Also returns the minimum separation of the binary";
+getEcc::usage="getEcc[a, \[Phi], S, EVEC->0, MR->10^6, Q->1]: Get orbital elements of the bound star";
+enf2::usage="enf2[a, \[Phi], S, EVEC->{0,0,0}, MR->10^6, Q->1]";
+(*getEcc2*)
+ppPlot;
+ppPlot2;
+pComp;
+pComp2;
+DisruptFracGrid::usage="DisruptFracGrid[n, S, EVEC->{0,0,0}], calculates dimensionless energy and minimum separation 
+for a range of binary phases and penetration factors. n is the number of grid points to use in \[Phi]. (The grid in pericenter
+is hard-coded). S is the orientation of the binary with respect to the 
+center of mass (1 is prograde -1 is retrograde). EVEC is the eccentricity vector of the binary.";
+Begin["`Private`"]
 eccentricAnomaly[ma_,e_,\[Epsilon]_:10^-16]:= Module[{xOld=ma+1000,x=ma,err=0,count=0, countMax=100, ini=1,x1,x2},
 While[Abs[x-xOld]>\[Epsilon]&& count<countMax,
 xOld=x;
@@ -99,13 +142,13 @@ sol[aa1_, \[Phi]1_, S_,opts :OptionsPattern[]]:=
 Module[{ dmin},
 dmin=OptionValue[DMIN];
 (*Solving parabolic Hill's equations. Detect extrema in distance--useful for detecting the minimum binary separation.*)
-NDSolve[{eqnsEccentric[aa1, \[Phi]1, S, opts](*, WhenEvent[(x'[t]x[t]+y'[t] y[t])Sqrt[x[t]^2+y[t]^2]\[Equal]0, Sow[t]]*)}, {x, x', y, y',  f}, {t,t0[aa1], -xend t0[aa1]}, Method->{"StiffnessSwitching", Method->{"ExplicitRungeKutta", Automatic},  Method->{"SymbolicProcessing"->0}}, MaxSteps->STEPS, PrecisionGoal->PGOAL, AccuracyGoal->AGOAL][[1]]
+NDSolve[{eqnsEccentric[aa1, \[Phi]1, S, opts], WhenEvent[(x'[t]x[t]+y'[t] y[t])Sqrt[x[t]^2+y[t]^2]==0, Sow[t]]}, {x, x', y, y',  f}, {t,t0[aa1], -xend t0[aa1]}, Method->{"StiffnessSwitching", Method->{"ExplicitRungeKutta", Automatic},  Method->{"SymbolicProcessing"->0}}, MaxSteps->STEPS, PrecisionGoal->PGOAL, AccuracyGoal->AGOAL][[1]]
 ];
-Options[initConditions]={Q->QDEF, MR->MRDEF};
+Options[initConditions]={Q->QDEF, EVEC->EVECDEF, MR->MRDEF};
 initConditions[aa1_,\[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{ii, mr, q, r1, r2, ff0, xm1, ym1, ff01},
 mr=OptionValue[MR];
 q=OptionValue[Q];
-ii=initEccentric[aa1, \[Phi]1, S, opts];
+ii=initEccentric[aa1, \[Phi]1, S, FilterRules[{opts}, Options[initEccentric]]];
 ff0=f0[aa1];
 ff01=Sqrt[2](1+Cos[ff0])^2/4;
 xm1=2mr^(1/3) ((- Sin[ff0])/(1+Cos[ff0])+(Cos[ff0]Sin[ff0]/(1+Cos[ff0])^2)) ff01;
@@ -146,8 +189,15 @@ r1x'[t0[aa1]]==ii[[4]],  r1y'[t0[aa1]]==ii[[5]]}, {r1x, r1y, r1x', r1y'}, {t, t0
 Options[posBound]={MR->MRDEF, Q->QDEF, EVEC->EVECDEF};
 posBound[aa1_, \[Phi]1_, S_, opts :OptionsPattern[]]:=Module[{q, mr, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1, ef,bound,pp},
 (*Print[FilterRules[opts, Options[sol]]];*)
-ef =enf[aa1, \[Phi]1, S, opts];
+ef =enf[aa1, \[Phi]1, S, FilterRules[{opts}, Options[enf]]];
 pp=If[ef<0, pos1[aa1, \[Phi]1, S, opts], pos2[aa1, \[Phi]1, S, opts]];
+pp
+]
+Options[posUnbound]={MR->MRDEF, Q->QDEF, EVEC->EVECDEF};
+posUnbound[aa1_, \[Phi]1_, S_, opts :OptionsPattern[]]:=Module[{q, mr, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1, ef,bound,pp},
+(*Print[FilterRules[opts, Options[sol]]];*)
+ef =enf[aa1, \[Phi]1, S, FilterRules[{opts}, Options[enf]]];
+pp=If[ef<0, pos2[aa1, \[Phi]1, S, opts], pos1[aa1, \[Phi]1, S, opts]];
 pp
 ]
 
@@ -179,20 +229,19 @@ Module[{ss, filt, tt, tend, e1, e2,minSep, times, tmp},
 tmp=Reap[sol[aa1, \[Phi]1, S, opts]];
 ss=tmp[[1]];
 times=tmp[[-1]][[1]];
-minSep=Min[(x[#]^2+y[#]^2/.ss)^0.5&/@times];
-
-tend=((x/.ss)[[1,1]][[2]]);
+minSep=Min[(x[#]^2+y[#]^2/.ss)^0.5 &/@times];
 tt=-xend t0[aa1];
-e1=-1/DD[aa1] ((1+Cos[f[tend]])^2/4 (x[tend] Cos[f[tend]]+y[tend] Sin[f[tend]])+(-Sin[f[tend]]x'[tend]+(1+Cos[f[tend]])y'[tend])/Sqrt[2])/.ss;
+tend=((x/.ss)[[1,1]][[2]]);
+If[tend<tt, Return[{-I, -I}, Module]];
+
+e1=en1[tend, ss, aa1, \[Phi]1, S, opts];
 tend=0.9 tend;
-e2=-1/DD[aa1] ((1+Cos[f[tend]])^2/4 (x[tend] Cos[f[tend]]+y[tend] Sin[f[tend]])+(-Sin[f[tend]]x'[tend]+(1+Cos[f[tend]])y'[tend])/Sqrt[2])/.ss;
+e2=en1[tend, ss, aa1, \[Phi]1, S, opts];
 tend=tend/0.9;
-filt=((tend>=tt)&& ((Sqrt[x[tt]^2+y[tt]^2]>10/DD[aa1]/.ss)) &&(Abs[(e1-e2)/e2]<1.2));
+filt=(((Sqrt[x[tt]^2+y[tt]^2]>10/DD[aa1]/.ss)) &&(Abs[(e1-e2)/e2]<1.2));
+Piecewise[{{{I, I}, Not[filt]}}, {en1[tt, ss, aa1, \[Phi]1, S, opts], minSep DD[aa1]}]
 
-Piecewise[{{{I, I}, Not[filt]}}, {(-1/DD[aa1] ((1+Cos[f[tt]])^2/4 (x[tt] Cos[f[tt]]+y[tt] Sin[f[tt]])+(-Sin[f[tt]]x'[tt]+(1+Cos[f[tt]])y'[tt])/Sqrt[2]))/.ss, minSep DD[aa1]}]
 ]
-
-
 Options[enf2]={EVEC->EVECDEF, MR->MRDEF, Q->QDEF};
 enf2[aa1_, \[Phi]_, S_, opts :OptionsPattern[]]:=Module[{mr, sol1, sol2, solp1, solp2, teval, p1}, 
 mr=OptionValue[MR];
@@ -208,16 +257,14 @@ Print[{sol1[t0[aa1]], sol2[t0[aa1]], solp1[t0[aa1]] , solp2[t0[aa1]]}];
 
 (*Getting eccentricity vector...*)
 Options[getEcc]={DMIN->DMINDEF, EVEC->EVECDEF, MR->MRDEF, Q->QDEF};
-getEcc[aa1_, \[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{teval, mr,ss,  pos, vel, kk, jc, rhat,eVec, nu, ecc,pomega, q, as, Sq, ef},
-kk=enf[aa1, \[Phi]1, S, opts];
-Print[kk];
+getEcc[aa1_, \[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{teval, mr,ss,  pos, vel, kk, jc, rhat,eVec, nu, ecc,pomega, q, as, Sq, ef, abin},
+kk=enf[aa1, \[Phi]1, S, FilterRules[{opts}, Options[enf]]];
 mr=OptionValue[MR];
 q=OptionValue[Q];
 Sq=q^((1-Sign[kk])0.5);
-
-If[((kk==I)), Return[{{1,1,1}, I, {I, I, I}}]];
+If[((kk==I)||(kk==-I)), Return[{{kk, kk, kk}, {kk,kk, kk}, kk, kk, kk, kk, kk, kk}, Module]];
 teval=-xend t0[aa1];
-ss=posBound[aa1, \[Phi]1, S,opts][[1]];
+ss=posBound[aa1, \[Phi]1, S, opts][[1]];
 pos={(r1x/.ss)[teval], (r1y/.ss)[teval],0};
 vel={(r1x'/.ss)[teval], (r1y'/.ss)[teval],0};
 (*Print[kk];*)
@@ -225,25 +272,25 @@ vel={(r1x'/.ss)[teval], (r1y'/.ss)[teval],0};
 jc=Cross[pos, vel];
 rhat=pos/Norm[pos];
 eVec=mr^-1 Cross[vel ,jc]-rhat;
-ecc=Sqrt[1-(Cross[pos, vel][[3]] DD[aa1]^(1/2) mr^(-5/6) (Abs[kk])^(1/2))^2];
+as=1/DD[aa1] mr^(2./3.) (1+q)/Sq  1/(2 Abs[kk]);
+abin=(1/DD[aa1]);
+ecc=Sqrt[1-(Cross[pos, vel][[3]] DD[aa1]^(1/2) mr^(-1/2) (abin/as)^(1/2))^2];
 pomega=ArcTan[eVec[[1]], eVec[[2]]];
 nu=ArcTan[ pos[[1]], pos[[2]]]-pomega;
 
-as=1/DD[aa1] mr^(2./3.) (1+q)/Sq  1/(2Abs[kk]);
 {eVec, jc, nu, as, ecc, pomega,  meanAnomaly[nu, ecc]}
 ]
 (*Orbital elements for the unbound orbit*)
 Options[getEcc2]={DMIN->DMINDEF, EVEC->EVECDEF, MR->MRDEF, Q->QDEF};
-getEcc2[aa1_, \[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{teval, mr,ss,  pos, vel, kk, jc, rhat,eVec, nu, ecc,pomega, q, as, Sq, ef, FF},
-kk=enf[aa1, \[Phi]1, S, opts];
+getEcc2[aa1_, \[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{teval, mr,ss,  pos, vel, kk, jc, rhat,eVec, nu, ecc,pomega, q, as, Sq, ef, FF, abin},
+kk=enf[aa1, \[Phi]1, S, FilterRules[{opts}, Options[enf]]];
 Print[kk];
 mr=OptionValue[MR];
 q=OptionValue[Q];
 Sq=q^((1-Sign[kk])0.5);
-
-If[((kk==I)), Return[{{1,1,1}, I, {I, I, I}}]];
+If[((kk==I)||(kk==-I)), Return[{{kk, kk, kk}, {kk,kk, kk}, kk, kk, kk, kk, kk, kk}, Module]];
 teval=-xend t0[aa1];
-ss=pos1[aa1, \[Phi]1, S,opts][[1]];
+ss=posUnbound[aa1, \[Phi]1, S,opts][[1]];
 pos={(r1x/.ss)[teval], (r1y/.ss)[teval],0};
 vel={(r1x'/.ss)[teval], (r1y'/.ss)[teval],0};
 (*Print[kk];*)
@@ -251,13 +298,14 @@ vel={(r1x'/.ss)[teval], (r1y'/.ss)[teval],0};
 jc=Cross[pos, vel];
 rhat=pos/Norm[pos];
 eVec=mr^-1 Cross[vel ,jc]-rhat;
-ecc=Sqrt[1+(Cross[pos, vel][[3]] DD[aa1]^(1/2) mr^(-5/6))^2Abs[kk]];
+as=1/DD[aa1] mr^(2./3.) (1+q)/Sq  1/(2 Abs[kk]);
+abin=(1/DD[aa1]);
+ecc=Sqrt[1+(Cross[pos, vel][[3]] DD[aa1]^(1/2) mr^(-1/2) (abin/as)^(1/2))^2];
 pomega=ArcTan[eVec[[1]], eVec[[2]]];
 nu=ArcTan[ pos[[1]], pos[[2]]]-pomega;
-as=1/DD[aa1] mr^(2./3.) (1+q)/Sq  (-1)/(2Abs[kk]);
 FF=2ArcTanh[((ecc-1)/(ecc+1))^(0.5) Tan[nu/2]];
 
-{eVec, jc, nu, as, ecc, pomega, ecc*Sinh[FF]-FF}
+{eVec, jc, nu, -as, ecc, pomega, ecc*Sinh[FF]-FF}
 ]
 
 (*Randomly a, \[Phi] parameter space for a given combination of S, e*)
@@ -312,15 +360,50 @@ pRange=PlotRange[p10];
 p1=ParametricPlot[{x[-10^(t1)], y[-10^(t1)]}/.ss, {t1, Log10[-ttidal[aa1]],Log10[-t0[aa1]]}, PlotRange->All, Frame->True, FrameLabel->{"X", "Y"}, FrameStyle->Directive[FontSize->20],
  Epilog->Inset[ann,{pRange[[1,2]], pRange[[2,2]]}]];
 
-Print[pRange];
+(*Print[pRange];*)
 p2=ParametricPlot[{x[-10^(t1)], y[-10^(t1)]}/.ss, {t1, Log10[-ttidal[aa1]], -2}, PlotRange->All, PlotStyle->{Purple, Dashed}];
 p3=ParametricPlot[{x[10^(t1)], y[10^(t1)]}/.ss, {t1, -2,Log10[- ttidal[aa1]]}, PlotRange->All, PlotStyle->{Red,Dashed}];
 
 Show[ p1, p2, p3]
 ]
 
-Options[pComp]={MR->MRDEF, Q->QDEF};
-pComp[aa1_, \[Phi]1_,  S_, opts:OptionsPattern[]]:=Module[{ sol1, sol2, sol1b, sol2b, pa, pb, pc,pd, q, mr},
+ppPlot2[aa1_, ph1_, S_, opts:OptionsPattern[]]:=Module[{p0,ann, p10,p1, p2, p3, p4,ss, pRange}, 
+ss=sol[aa1,  ph1, S, opts];
+p0=ListPlot[{{x[t0[aa1]], y[t0[aa1]]}}/.ss, PlotStyle->{Red, PointSize[Large]}];
+ann=Graphics[Text[Style["\[Phi]="<>ToString[ph1/\[Pi]]<>" \[Pi]",20]]];
+p10=ParametricPlot[{-10^t1, (x[-10^(t1)]^2+y[-10^(t1)]^2)/.ss}, {t1, Log10[-ttidal[aa1]],Log10[-t0[aa1]]}, PlotRange->All, Frame->True, FrameLabel->{"X", "Y"}, FrameStyle->Directive[FontSize->20]];
+pRange=PlotRange[p10];
+p1=ParametricPlot[{-10^t1,(x[-10^(t1)]^2+y[-10^(t1)]^2)^0.5/.ss}, {t1, Log10[-ttidal[aa1]],Log10[-t0[aa1]]}, PlotRange->All, Frame->True, FrameLabel->{"X", "Y"}, FrameStyle->Directive[FontSize->20],
+ Epilog->Inset[ann,{pRange[[1,2]], pRange[[2,2]]}]];
+
+(*Print[pRange];*)
+p2=ParametricPlot[{-10^t1, (x[-10^(t1)]^2+y[-10^(t1)]^2)^0.5/.ss}, {t1, Log10[-ttidal[aa1]], -2}, PlotRange->All, PlotStyle->{Purple, Dashed}];
+p3=ParametricPlot[{10^t1, (x[10^(t1)]^2+y[10^(t1)]^2)^0.5/.ss}, {t1, -2,Log10[- ttidal[aa1]]}, PlotRange->All, PlotStyle->{Red,Dashed}];
+
+Show[ p2, p3]
+]
+
+Options[pComp]={MR->MRDEF, Q->QDEF, COL->Green};
+pComp[aa1_, \[Phi]1_,  S_, opts:OptionsPattern[]]:=Module[{ sol1, sol2, sol1b, sol2b, pa, pb, pc,pd, q, mr, col},
+mr=OptionValue[MR];
+q=OptionValue[Q];
+col=OptionValue[COL];
+sol1=r1x/.pos2[aa1,\[Phi]1, S, MR->mr, Q->q][[1]];
+sol2=r1y/.pos2[aa1,\[Phi]1 , S, MR->mr, Q->q][[1]];
+
+sol1b=r1x/.pos1[aa1,\[Phi]1, S, MR->mr, Q->q][[1]];
+sol2b=r1y/.pos1[aa1,\[Phi]1 , S, MR->mr, Q->q][[1]];
+
+pa=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, t0[aa1], ttidal[aa1]}, PlotRange->All, PlotStyle->{col, Dashed}];
+pb=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, ttidal[aa1], 0}, PlotStyle->{col, Dashed}];
+pc=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, 0, -ttidal[aa1]}, PlotStyle->{col, Dashed}];
+pd=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, -ttidal[aa1], -3 ttidal[aa1]}, PlotStyle->{col, Dashed}];
+Show[pa, pb, pc, pd, PlotRange->All]
+
+]
+
+Options[pComp2]={MR->MRDEF, Q->QDEF};
+pComp2[aa1_, \[Phi]1_,  S_, opts:OptionsPattern[]]:=Module[{ sol1, sol2, sol1b, sol2b, pa, pb, pc,pd, q, mr, col},
 mr=OptionValue[MR];
 q=OptionValue[Q];
 sol1=r1x/.pos2[aa1,\[Phi]1, S, MR->mr, Q->q][[1]];
@@ -329,27 +412,19 @@ sol2=r1y/.pos2[aa1,\[Phi]1 , S, MR->mr, Q->q][[1]];
 sol1b=r1x/.pos1[aa1,\[Phi]1, S, MR->mr, Q->q][[1]];
 sol2b=r1y/.pos1[aa1,\[Phi]1 , S, MR->mr, Q->q][[1]];
 
-pa=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, t0[aa1], ttidal[aa1]}, PlotRange->All, PlotStyle->{Gray, Dashed}];
-pb=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, ttidal[aa1], 0}, PlotStyle->{Gray, Dashed}];
-pc=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, 0, -ttidal[aa1]}, PlotStyle->{Gray, Dashed}];
-pd=ParametricPlot[{sol1[tt]-sol1b[tt],sol2[tt]-sol2b[tt]}, {tt, -ttidal[aa1], -3 ttidal[aa1]}, PlotStyle->{Gray, Dashed}];
-Show[pa, pb, pc, pd, PlotRange->All]
-
+pb=ParametricPlot[{-10^tt, Sqrt[(sol1[-10^tt]-sol1b[-10^tt])^2+(sol2[-10^tt]-sol2b[-10^tt])^2]}, {tt, Log10[-ttidal[aa1]], -2}, PlotStyle->{Purple}];
+pc=ParametricPlot[{10^tt, Sqrt[(sol1[10^tt]-sol1b[10^tt])^2+(sol2[10^tt]-sol2b[10^tt])^2]}, {tt, -2,  Log10[-ttidal[aa1]]}, PlotStyle->{Red}];
+(*pd=Plot[Sqrt[(sol1[tt]-sol1b[tt])^2+(sol2[tt]-sol2b[tt])^2], {tt, -ttidal[aa1], -3 ttidal[aa1]}, PlotStyle\[Rule]{Red, Dashed}];*)
+Show[pb, pc]
 ]
-(*Begin["`Private`"]*)
-PGOAL=16;
-AGOAL=16; 
+
+PGOAL=Automatic;
+AGOAL=Automatic; 
 STEPS=3 10^5;
 xend=50;
-(*End[]*)
-
+End[]
 EndPackage[]
 
-
-ppPlot[]
-
-
-enf2[-3, 0.7 \[Pi], 1]
 
 
 
