@@ -137,10 +137,10 @@ D[y[t],t,t]==(1+Cos[f[t]])^3/8 (-y[t]+3(x[t] Cos[f[t]]+y[t] Sin[f[t]])Sin[f[t]])
 f'[t]==Sqrt[2 ](1+Cos[f[t]])^2/4,
 x'[t0[a]]==initCond[[3]], y'[t0[a]]==initCond[[4]], f[t0[a]]==f0[a], x[t0[a]]==initCond[[1]], y[t0[a]]==initCond[[2]]}
 ];
-Options[sol]={DMIN->DMINDEF, EVEC->EVECDEF};
+Options[sol]={EVEC->EVECDEF};
 sol[aa1_, \[Phi]1_, S_,opts :OptionsPattern[]]:=
 Module[{ dmin},
-dmin=OptionValue[DMIN];
+(*dmin=OptionValue[DMIN];*)
 (*Solving parabolic Hill's equations. Detect extrema in distance--useful for detecting the minimum binary separation.*)
 NDSolve[{eqnsEccentric[aa1, \[Phi]1, S, opts], WhenEvent[(x'[t]x[t]+y'[t] y[t])Sqrt[x[t]^2+y[t]^2]==0, Sow[t]]}, {x, x', y, y',  f}, {t,t0[aa1], -xend t0[aa1]}, Method->{"StiffnessSwitching", Method->{"ExplicitRungeKutta", Automatic},  Method->{"SymbolicProcessing"->0}}, MaxSteps->STEPS, PrecisionGoal->PGOAL, AccuracyGoal->AGOAL][[1]]
 ];
@@ -201,12 +201,12 @@ pp=If[ef<0, pos2[aa1, \[Phi]1, S, opts], pos1[aa1, \[Phi]1, S, opts]];
 pp
 ]
 
-Options[en1]={DMIN->DMINDEF, EVEC->EVECDEF};
+Options[en1]={EVEC->EVECDEF};
 en1[t_, ss_, aa1_?NumericQ, \[Phi]1_?NumericQ, S_, opts :OptionsPattern[]]:=Module[{}, 
 (-1/DD[aa1] ((1+Cos[f[t]])^2/4 (x[t] Cos[f[t]]+y[t] Sin[f[t]])+(-Sin[f[t]]x'[t]+(1+Cos[f[t]])y'[t])/Sqrt[2])/.ss)
 ]
 
-Options[enf]={DMIN->DMINDEF, EVEC->EVECDEF}
+Options[enf]={EVEC->EVECDEF}
 enf[aa1_?NumericQ,\[Phi]1_?NumericQ, S_, opts:OptionsPattern[]]:=
 Module[{ss, filt, tt, tend, e1, e2,minSep, times, tmp},
 ss=sol[aa1, \[Phi]1, S, opts];
@@ -223,10 +223,11 @@ filt=(((Sqrt[x[tt]^2+y[tt]^2]>10/DD[aa1]/.ss)) &&(Abs[(e1-e2)/e2]<1.2));
 Piecewise[{{I, Not[filt]}}, en1[tt, ss, aa1, \[Phi]1, S, opts]]
 ]
 
-Options[enfColl]={DMIN->DMINDEF, EVEC->EVECDEF}
+Options[enfColl]={EVEC->EVECDEF}
 enfColl[aa1_?NumericQ,\[Phi]1_?NumericQ, S_, opts:OptionsPattern[]]:=
-Module[{ss, filt, tt, tend, e1, e2,minSep, times, tmp},
-tmp=Reap[sol[aa1, \[Phi]1, S, opts]];
+Module[{ss, filt, tt, tend, e1, e2,minSep, times, tmp, opts2},
+opts2=FilterRules[{opts}, Options[sol]];
+tmp=Reap[sol[aa1, \[Phi]1, S, opts2]];
 ss=tmp[[1]];
 times=tmp[[-1]][[1]];
 minSep=Min[(x[#]^2+y[#]^2/.ss)^0.5 &/@times];
@@ -234,9 +235,9 @@ tt=-xend t0[aa1];
 tend=((x/.ss)[[1,1]][[2]]);
 If[tend<tt, Return[{-I, -I}, Module]];
 
-e1=en1[tend, ss, aa1, \[Phi]1, S, opts];
+e1=en1[tend, ss, aa1, \[Phi]1, S, opts2];
 tend=0.9 tend;
-e2=en1[tend, ss, aa1, \[Phi]1, S, opts];
+e2=en1[tend, ss, aa1, \[Phi]1, S, opts2];
 tend=tend/0.9;
 filt=(((Sqrt[x[tt]^2+y[tt]^2]>10/DD[aa1]/.ss)) &&(Abs[(e1-e2)/e2]<1.2));
 Piecewise[{{{I, I}, Not[filt]}}, {en1[tt, ss, aa1, \[Phi]1, S, opts], minSep DD[aa1]}]
@@ -257,18 +258,20 @@ Print[{sol1[t0[aa1]], sol2[t0[aa1]], solp1[t0[aa1]] , solp2[t0[aa1]]}];
 
 (*Getting eccentricity vector...*)
 Options[getEcc]={DMIN->DMINDEF, EVEC->EVECDEF, MR->MRDEF, Q->QDEF};
-getEcc[aa1_, \[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{teval, mr,ss,  pos, vel, kk, jc, rhat,eVec, nu, ecc,pomega, q, as, Sq, ef, abin},
-kk=enf[aa1, \[Phi]1, S, FilterRules[{opts}, Options[enf]]];
+getEcc[aa1_, \[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{teval, mr,ss,  pos, vel, kk, jc, rhat,eVec, nu, ecc,pomega, q, as, Sq, ef, abin, minSep},
+{kk, minSep}=enfColl[aa1, \[Phi]1, S, FilterRules[{opts}, Options[enfColl]]];
+
 mr=OptionValue[MR];
 q=OptionValue[Q];
 Sq=q^((1-Sign[kk])0.5);
-If[((kk==I)||(kk==-I)), Return[{{kk, kk, kk}, {kk,kk, kk}, kk, kk, kk, kk, kk, kk}, Module]];
+If[((kk==I)||(kk==-I)), Return[{{kk, kk, kk}, {kk,kk, kk}, kk, kk, kk, kk, kk, kk, S, kk}, Module]];
+If[minSep<OptionValue[DMIN],  Return[{{"Coll", "Coll","Coll"}, {"Coll", "Coll","Coll"}, "Coll", "Coll","Coll", "Coll", "Coll","Coll", S, "Coll"}, Module]];
 teval=-xend t0[aa1];
-ss=posBound[aa1, \[Phi]1, S, opts][[1]];
+ss=posBound[aa1, \[Phi]1, S, FilterRules[{opts}, Options[posBound]]][[1]];
 pos={(r1x/.ss)[teval], (r1y/.ss)[teval],0};
 vel={(r1x'/.ss)[teval], (r1y'/.ss)[teval],0};
 (*Print[kk];*)
-(*Return eccentricity; Implicitly assumes equal mass ratios for now.*)
+(*Return eccentricity;*)
 jc=Cross[pos, vel];
 rhat=pos/Norm[pos];
 eVec=mr^-1 Cross[vel ,jc]-rhat;
@@ -278,7 +281,7 @@ ecc=Sqrt[1-(Cross[pos, vel][[3]] DD[aa1]^(1/2) mr^(-1/2) (abin/as)^(1/2))^2];
 pomega=ArcTan[eVec[[1]], eVec[[2]]];
 nu=ArcTan[ pos[[1]], pos[[2]]]-pomega;
 
-{eVec, jc, nu, as, ecc, pomega,  meanAnomaly[nu, ecc]}
+{eVec, jc, nu, as, as/abin, ecc, pomega,  meanAnomaly[nu, ecc], S, Sign[kk]}
 ]
 (*Orbital elements for the unbound orbit*)
 Options[getEcc2]={DMIN->DMINDEF, EVEC->EVECDEF, MR->MRDEF, Q->QDEF};
@@ -424,6 +427,9 @@ STEPS=3 10^5;
 xend=50;
 End[]
 EndPackage[]
+
+
+
 
 
 
