@@ -264,8 +264,8 @@ getEcc[aa1_, \[Phi]1_, S_, opts:OptionsPattern[]]:=Module[{teval, mr,ss,  pos, v
 mr=OptionValue[MR];
 q=OptionValue[Q];
 Sq=q^((1-Sign[kk])0.5);
-If[((kk==I)||(kk==-I)), Return[{{kk, kk, kk}, {kk,kk, kk}, kk, kk, kk, kk, kk, kk, S, kk}, Module]];
-If[minSep<OptionValue[DMIN],  Return[{{"Coll", "Coll","Coll"}, {"Coll", "Coll","Coll"}, "Coll", "Coll","Coll", "Coll", "Coll","Coll", S, "Coll"}, Module]];
+If[((kk==I)||(kk==-I)), Return[{{kk, kk, kk}, {kk,kk, kk}, kk, kk, kk, kk, kk, kk, kk}, Module]];
+If[minSep<OptionValue[DMIN],  Return[{{"Coll", "Coll","Coll"}, {"Coll", "Coll","Coll"}, "Coll", "Coll","Coll", "Coll", "Coll","Coll", "Coll"}, Module]];
 teval=-xend t0[aa1];
 ss=posBound[aa1, \[Phi]1, S, FilterRules[{opts}, Options[posBound]]][[1]];
 pos={(r1x/.ss)[teval], (r1y/.ss)[teval],0};
@@ -281,7 +281,7 @@ ecc=Sqrt[1-(Cross[pos, vel][[3]] DD[aa1]^(1/2) mr^(-1/2) (abin/as)^(1/2))^2];
 pomega=ArcTan[eVec[[1]], eVec[[2]]];
 nu=ArcTan[ pos[[1]], pos[[2]]]-pomega;
 
-{eVec, jc, nu, as, as/abin, ecc, pomega,  meanAnomaly[nu, ecc], S, Sign[kk]}
+{eVec, jc, nu, as, as/abin, ecc, pomega,  meanAnomaly[nu, ecc], Sign[kk]}
 ]
 (*Orbital elements for the unbound orbit*)
 Options[getEcc2]={DMIN->DMINDEF, EVEC->EVECDEF, MR->MRDEF, Q->QDEF};
