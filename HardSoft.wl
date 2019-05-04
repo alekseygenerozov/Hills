@@ -2,7 +2,7 @@
 
 Needs["Hill`"]
 BeginPackage["HardSoft`"]
-MC::usage="MC[Ntrials, Mbh1, opts]--Run Ntrials binary disruption experiments with central black hole of mass Mbh"
+MC::usage="MC[Ntrials,  opts]--Run Ntrials binary disruption experiments with central black hole of mass Mbh"
 
 
 Begin["`Private`"]
@@ -14,6 +14,7 @@ Rsun=6.957*10.^10;
 au=1.495978707*10.^13;
 c=2.99792458 10^10;
 
+Mbh=4*10^6 Msun;
 t0=4*10^6  year;
 no=1.5*10^6;
 ro=0.1 pc;
@@ -72,7 +73,7 @@ toDim= rscale{1, 1, 1, tscale^-1, tscale^-1, tscale^-1};
 {i1[[1]] toDim, i1[[2]] toDim}
 ]
 Options[smaEmpirical]={ECC->0, COLL->False, COMPACT->False};
-smaEmpirical[Mbh1_,  opts: OptionsPattern[]]:=Block[{Mbh=Mbh1, \[Phi]1, a1, q,m, m1, m2,rt, smas, kpro, kretro, ks, a0, filt, smas2, amin, amax, comp, out,aa1,
+smaEmpirical[opts: OptionsPattern[]]:=Block[{\[Phi]1, a1, q,m, m1, m2,rt, smas, kpro, kretro, ks, a0, filt, smas2, amin, amax, comp, out,aa1,
 delta, dmin, ecc, S1, i1, ss, endState, cut, rscale, abinAU, tscale},
 m1=RandomVariate[PDMF] Msun;
 m=m1(1+q);
@@ -90,8 +91,8 @@ If[amin>=amax, Return["ERR", Module]];
 smas=powSamp[1, amin, amax];
 dmin=0;
 If[And[OptionValue[COLL], Not[comp]], dmin=acontact[m, q]/smas];
-rt=(Mbh1/m)^(1/3) smas;
-cut=Max[(Mbh1/m1)^(1/3) rinterp[m1/Msun] Rsun/(rt), (Mbh1/m2)^(1/3) rinterp[m2/Msun] Rsun/(rt), 6 G Mbh1/c^2/rt];
+rt=(Mbh/m)^(1/3) smas;
+cut=Max[(Mbh/m1)^(1/3) rinterp[m1/Msun] Rsun/(rt), (Mbh/m2)^(1/3) rinterp[m2/Msun] Rsun/(rt), 6 G Mbh/c^2/rt];
 
 aa1=RandomVariate[UniformDistribution[{cut, 3.2}]]//Log10;
 \[Phi]1=RandomVariate[UniformDistribution[{-\[Pi], \[Pi]}]];
@@ -105,14 +106,14 @@ endState=endState rscale;
 tscale=10^(1.5 aa1) Sqrt[abinAU^3/(m/Msun)];
 endState[[3;;]]=endState[[3;;]]/tscale;
 
-i1={{m/Msun, q, -t0[aa1] tscale},initConditionsDim[aa1, \[Phi]1, S1, smas, m, EVEC->{ecc,0,0}, Q->q, MR->Mbh1/m]}//Flatten;
-out= Hill`getEcc[aa1, \[Phi]1,S1, EVEC->{ecc,0,0}, Q->q, DMIN->dmin, MR->Mbh1/m ][[5;;]];
+i1={{m/Msun, q, -t0[aa1] tscale},initConditionsDim[aa1, \[Phi]1, S1, smas, m, EVEC->{ecc,0,0}, Q->q, MR->Mbh/m]}//Flatten;
+out= Hill`getEcc[aa1, \[Phi]1,S1, EVEC->{ecc,0,0}, Q->q, DMIN->dmin, MR->Mbh/m ][[5;;]];
 {i1, Flatten[{10^aa1, \[Phi]1, S1, m/Msun, smas/au, ecc, q, out}], endState}
 ]
 
 Options[MC]=Options[smaEmpirical];
-MC[Ntrials_, Mbh1_, opts:OptionsPattern[]]:=Module[{dat, dat1, dat2, dat3, names, base, out},
-dat=Table[smaEmpirical[Mbh1,  opts], {i, 1, Ntrials}];
+MC[Ntrials_, opts:OptionsPattern[]]:=Module[{dat, dat1, dat2, dat3, names, base, out},
+dat=Table[smaEmpirical[ opts], {i, 1, Ntrials}];
 Print[Position[dat, x_/;x=="ERR"]//Flatten];
 dat=dat[[Complement[Range[1,Length[dat]],Position[dat, x_/;x=="ERR"]//Flatten]]];
 names= { "m", "q", "t0", "x", "y" , "z","vx" , "vy", "vz", "x2", "y2" , "z2","vx2" , "vy2", "vz2"};
@@ -125,7 +126,7 @@ dat2=Prepend[dat2, names];
 names= { "x", "y", "x'", "y'"};
 dat3=dat[[;;,3]];
 dat3=Prepend[dat3, names];
-base="Mbh"<>Cstring[Mbh1/Msun]<>"_t"<>Cstring[tt/year] <>"_e"<>ToString[OptionValue[ECC]]<>"_coll" <>ToString[OptionValue[COLL]]<>".csv";
+base="Mbh"<>Cstring[Mbh/Msun]<>"_t"<>Cstring[tt/year] <>"_e"<>ToString[OptionValue[ECC]]<>"_coll" <>ToString[OptionValue[COLL]]<>".csv";
 out=NotebookDirectory[]<>"trial_init_"<>ToString[base];
 Export[out, dat1];
 out=NotebookDirectory[]<>"trial_"<>ToString[base];
