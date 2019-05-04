@@ -158,8 +158,9 @@ r2={2 mr^(1/3) Cos[ff0]/(1+Cos[ff0])+1/(1+q) ii[[1]], 2 mr^(1/3) Sin[ff0]/(1+Cos
 {r1, r2}
 ]
 Options[pos1]={Q->QDEF, EVEC->EVECDEF, MR->MRDEF};
-pos1[aa1_, \[Phi]1_, S_,opts :OptionsPattern[]]:=Module[{mr, q, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1, ii},
+pos1[aa1_, \[Phi]1_, S_,opts :OptionsPattern[]]:=Module[{mr, q, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1, ii, tend},
 ss=sol[aa1, \[Phi]1, S, FilterRules[{opts}, Options[sol]]];
+tend=((x/.ss)[[1,1,2]]);
 mr=OptionValue[MR];
 q=OptionValue[Q];
 {xx, yy, xx1, yy1}={x, y, x', y'}/.ss;
@@ -168,12 +169,13 @@ ii=initConditions[aa1, \[Phi]1, S, opts][[1]];
 
 NDSolve[{D[r1x[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1x[t]+(q/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) xx[t],D[r1y[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1y[t]+(q/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) yy[t], 
 r1x[t0[aa1]]==ii[[1]], r1y[t0[aa1]]==ii[[2]], r1x'[t0[aa1]]==ii[[4]],  r1y'[t0[aa1]]==ii[[5]]}, 
-{r1x, r1y, r1x', r1y'}, {t, t0[aa1], -xend t0[aa1]}]
+{r1x, r1y, r1x', r1y'}, {t, t0[aa1], tend}]
 ]
 Options[pos2]={Q->QDEF, EVEC->EVECDEF, MR->MRDEF};
-pos2[aa1_, \[Phi]1_, S_,opts :OptionsPattern[]]:=Module[{mr, q, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1,ii},
+pos2[aa1_, \[Phi]1_, S_,opts :OptionsPattern[]]:=Module[{mr, q, ss, xx, yy, ff0, ff01, xx1, yy1, xm1, ym1,ii, tend},
 (*Print[FilterRules[{opts}, Options[sol]]];*)
 ss=sol[aa1, \[Phi]1, S, FilterRules[{opts}, Options[sol]]];
+tend=((x/.ss)[[1,1,2]]);
 mr=OptionValue[MR];
 q=OptionValue[Q];
 {xx, yy, xx1, yy1}={x, y, x', y'}/.ss;
@@ -183,7 +185,7 @@ ii=initConditions[aa1, \[Phi]1, S, opts][[2]];
 NDSolve[{D[r1x[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1x[t]-(1/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) xx[t],
 D[r1y[t], t,t]==-mr/(r1x[t]^2+r1y[t]^2)^(3/2) r1y[t]-(1/(1+q))/(xx[t]^2+yy[t]^2)^(3/2) yy[t], 
 r1x[t0[aa1]]==ii[[1]], r1y[t0[aa1]]==ii[[2]],
-r1x'[t0[aa1]]==ii[[4]],  r1y'[t0[aa1]]==ii[[5]]}, {r1x, r1y, r1x', r1y'}, {t, t0[aa1], -xend t0[aa1]}]
+r1x'[t0[aa1]]==ii[[4]],  r1y'[t0[aa1]]==ii[[5]]}, {r1x, r1y, r1x', r1y'}, {t, t0[aa1], tend}]
 ]
 
 Options[posBound]={MR->MRDEF, Q->QDEF, EVEC->EVECDEF};
