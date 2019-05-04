@@ -5,7 +5,11 @@ BeginPackage["HardSoft`"]
 MC::usage="MC[Ntrials,  opts]--Run Ntrials binary disruption experiments with central black hole of mass Mbh"
 
 
+Needs["Hill`"]
+
+
 Begin["`Private`"]
+
 pc=3.08568*10^18;
 Msun = 1.98892*10^33;
 year = 3.15569 10^7;
@@ -15,10 +19,11 @@ au=1.495978707*10.^13;
 c=2.99792458 10^10;
 
 Mbh=4*10^6 Msun;
-t0=4*10^6  year;
+to=4*10^6  year;
 no=1.5*10^6;
 ro=0.1 pc;
 hr=1;
+MMIN=0.1;
 
 loc="/home/aleksey/software/MIST_v1.1_feh_p0.00_afe_p0.0_vvcrit0.4_EEPS/";
 rdat=Import[loc<>"r_zams.csv"];
@@ -26,16 +31,18 @@ tdat=Import[loc<>"mt0.csv"];
 rinterp=rdat//Interpolation;
 Minterp=Log10[tdat]//Interpolation[#, InterpolationOrder->1]&;
 Mt0[tt_]:=10^Minterp[Log10[tt]]
-muKroupa[M_]:=Piecewise[{{(M)^(-23/10), M>=1/2},{(1/2)^-1 (M)^(-13/10),(8/100<=M)&&(M<1/2)}},(1/2)^-1  (8/100)^-1 (M)^(-3/10)];
+(*muKroupa[M_]:=Piecewise[{{(M)^(-23/10), M>=1/2},{(1/2)^-1 (M)^(-13/10),(8/100<=M)&&(M<1/2)}},(1/2)^-1  (8/100)^-1 (M)^(-3/10)];*)
+muKroupa1[M_]:= Piecewise[{{(M)^-2.3, M>=0.5},{0.5^-1. (M)^-1.3,(0.08<=M)&&(M<0.5)}},0.5^-1 0.08^-1 ( M)^-0.3];
+muKroupa[M_]:=muKroupa1[M]/NIntegrate[muKroupa1[m1],{m1, MMIN, 100}]
 IMF:=ProbabilityDistribution[muKroupa[M], {M, MMIN, 100}];
-PDMF:=ProbabilityDistribution[muKroupa[M], {M, MMIN, Mt0[t0/year]}];
+PDMF:=ProbabilityDistribution[muKroupa[M], {M, MMIN, Mt0[to/year]}];
 
 (*Mean mass and RMS mass should evolv self-consistently--see below.!*)
 norm[mmax_]:=Piecewise[{{(250*mmax^(7/10))/7,mmax<=2/25},{(100*2^(7/10)*5^(3/5))/21-20/(3*mmax^(3/10)),Inequality[2/25,Less,mmax,LessEqual,1/2]}},(-200*2^(3/10))/39+(100*2^(7/10)*5^(3/5))/21-10/(13*mmax^(13/10))]-7.016379835666912
 mbarf[mmax_]:=(Piecewise[{{(250*mmax^(17/10))/17,mmax<=2/25},{(-8*2^(7/10)*5^(3/5))/119+(20*mmax^(7/10))/7,Inequality[2/25,Less,mmax,LessEqual,1/2]}},(100*2^(3/10))/21-(8*2^(7/10)*5^(3/5))/119-10/(3*mmax^(3/10))]-0.28323077863336193)/norm[mmax]
 M2f[mmax_]:=(Piecewise[{{(250*mmax^(27/10))/27,mmax<=2/25},{(-16*2^(7/10))/(2295*5^(2/5))+(20*mmax^(17/10))/17,Inequality[2/25,Less,mmax,LessEqual,1/2]}},(-50*2^(3/10))/119-(16*2^(7/10))/(2295*5^(2/5))+(10*mmax^(7/10))/7]-0.017524313761887154)/norm[mmax]
-M2:=M2f[Mt0[t0/year]]Msun^2;
-mbar:=mbarf[Mt0[t0/year]] Msun;
+M2:=M2f[Mt0[to/year]]Msun^2;
+mbar:=mbarf[Mt0[to/year]] Msun;
 
 
 (*M2=0.13 Msun^2;
@@ -44,10 +51,10 @@ vkep:=Sqrt[G Mbh/ro];
 sig:=hr vkep;
 n:=no/pc^3 hr^-1;
 ahs[m_,q_]:=G (q m^2)/( (1+q)^2 sig^2 mbar);
-agw[m_,  q_, e_]:= (5/(64*4) (c^5 (1+q)^2)/(G^3 m^3 t0 q) (1-e^2)^(7/2)/(1+73/24 e^2+37/96 e^4))^(-1/4)
+agw[m_,  q_, e_]:= (5/(64*4) (c^5 (1+q)^2)/(G^3 m^3 to q) (1-e^2)^(7/2)/(1+73/24 e^2+37/96 e^4))^(-1/4)
 v12[m_, a_, q_]:=Sqrt[G  m/a]
 lam12[m_, a_, q_]:=Log[2 sig^2/v12[m,a, q]^2]
-aevapRoot[m_?NumericQ,  q_]:=NSolve[0.07 (v12[m, a, q]^2 sig)/(G^2  n M2 lam12[m,a, q])==t0, a]
+aevapRoot[m_?NumericQ,  q_]:=NSolve[0.07 (v12[m, a, q]^2 sig)/(G^2  n M2 lam12[m,a, q])==to, a]
 aevap[m_?NumericQ, q_]:=(a/.aevapRoot[m,  q])
 rRoche[q_]:=(0.49 q^(2/3)/(0.6 q^(2/3)+Log[1+q^(1/3)]));
 acontact[m_,q_]:=Max[rinterp[m/Msun/(1+q)]Rsun/rRoche[q^-1], rinterp[m/Msun q/(1+q)]Rsun/rRoche[q]];
@@ -126,7 +133,7 @@ dat2=Prepend[dat2, names];
 names= { "x", "y", "x'", "y'"};
 dat3=dat[[;;,3]];
 dat3=Prepend[dat3, names];
-base="Mbh"<>Cstring[Mbh/Msun]<>"_t"<>Cstring[tt/year] <>"_e"<>ToString[OptionValue[ECC]]<>"_coll" <>ToString[OptionValue[COLL]]<>".csv";
+base="Mbh"<>Cstring[Mbh/Msun]<>"_t"<>Cstring[to/year] <>"_e"<>ToString[OptionValue[ECC]]<>"_coll" <>ToString[OptionValue[COLL]]<>".csv";
 out=NotebookDirectory[]<>"trial_init_"<>ToString[base];
 Export[out, dat1];
 out=NotebookDirectory[]<>"trial_"<>ToString[base];
