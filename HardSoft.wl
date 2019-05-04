@@ -111,12 +111,12 @@ S1= RandomChoice[{-1,1}];
 
 ss=Hill`sol[aa1, \[Phi]1, S1, EVEC->{ecc,0,0}];
 tend=(Hill`Private`x/.ss)[[1,1,-1]];
-endState={tend/(-(Hill`Private`xend)Hill`t0[aa1]), Hill`Private`x[tend], Hill`Private`y[tend], Hill`Private`x'[tend], Hill`Private`y'[tend]}/.ss;
+endState={tend/(-(Hill`Private`xend) Hill`t0[aa1]), Hill`Private`x[tend], Hill`Private`y[tend], Hill`Private`x'[tend], Hill`Private`y'[tend]}/.ss;
 abinAU=smas/au;
 rscale=10^aa1 abinAU;
-endState=endState rscale;
+endState[[2;;]]=endState[[2;;]] rscale;
 tscale=10^(1.5 aa1) Sqrt[abinAU^3/(m/Msun)];
-endState[[3;;]]=endState[[3;;]]/tscale;
+endState[[4;;]]=endState[[4;;]]/tscale;
 
 i1={{m/Msun, q, -t0[aa1] tscale},initConditionsDim[aa1, \[Phi]1, S1, smas, m, EVEC->{ecc,0,0}, Q->q, MR->Mbh/m]}//Flatten;
 out= Hill`getEcc[aa1, \[Phi]1,S1, EVEC->{ecc,0,0}, Q->q, DMIN->dmin, MR->Mbh/m ][[5;;]];
