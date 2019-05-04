@@ -83,8 +83,8 @@ toDim= rscale{1, 1, 1, tscale^-1, tscale^-1, tscale^-1};
 {i1[[1]] toDim, i1[[2]] toDim}
 ]
 Options[smaEmpirical]={ECC->0, COLL->False, COMPACT->False};
-smaEmpirical[opts: OptionsPattern[]]:=Block[{\[Phi]1, a1, q,m, m1, m2,rt, smas, kpro, kretro, ks, a0, filt, smas2, amin, amax, comp, out,aa1,
-delta, dmin, ecc, S1, i1, ss, endState, cut, rscale, abinAU, tscale},
+smaEmpirical[opts: OptionsPattern[]]:=Block[{\[Phi]1, a1, q, m, m1, m2,rt, smas, kpro, kretro, ks, a0, filt, smas2, amin, amax, comp, out,aa1,
+delta, dmin, ecc, S1, i1, ss, endState, cut, rscale, abinAU, tscale, tend},
 m1=RandomVariate[PDMF] Msun;
 m=m1(1+q);
 m2=q m1;
@@ -110,7 +110,8 @@ aa1=RandomVariate[UniformDistribution[{cut, 3.2}]]//Log10;
 S1= RandomChoice[{-1,1}];
 
 ss=Hill`sol[aa1, \[Phi]1, S1, EVEC->{ecc,0,0}];
-endState={Hill`Private`x[-(Hill`Private`xend)Hill`t0[aa1]], Hill`Private`y[-(Hill`Private`xend)Hill`t0[aa1]], Hill`Private`x'[-(Hill`Private`xend)Hill`t0[aa1]], Hill`Private`y'[-(Hill`Private`xend)Hill`t0[aa1]]}/.ss;
+tend=(Hill`Private`x/.ss)[[1,1,-1]];
+endState={tend/(-(Hill`Private`xend)Hill`t0[aa1]), Hill`Private`x[tend], Hill`Private`y[tend], Hill`Private`x'[tend], Hill`Private`y'[tend]}/.ss;
 abinAU=smas/au;
 rscale=10^aa1 abinAU;
 endState=endState rscale;
@@ -135,7 +136,7 @@ dat1=Prepend[dat1, names];
 names= { "rp/rt", "phi", "S", "m" , "abin","e", "q", "as/abin", "es", "os", "Ms",  "Sk"};
 dat2=dat[[;;,2]];
 dat2=Prepend[dat2, names];
-names= { "x", "y", "x'", "y'"};
+names= {"end", "x", "y", "vx", "vy"};
 dat3=dat[[;;,3]];
 dat3=Prepend[dat3, names];
 base="Mbh"<>Cstring[Mbh/Msun]<>"_t"<>Cstring[to/year] <>"_e"<>ToString[OptionValue[ECC]]<>"_coll" <>ToString[OptionValue[COLL]]<>".csv";
