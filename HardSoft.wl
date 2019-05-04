@@ -54,8 +54,11 @@ ahs[m_,q_]:=G (q m^2)/( (1+q)^2 sig^2 mbar);
 agw[m_,  q_, e_]:= (5/(64*4) (c^5 (1+q)^2)/(G^3 m^3 to q) (1-e^2)^(7/2)/(1+73/24 e^2+37/96 e^4))^(-1/4)
 v12[m_, a_, q_]:=Sqrt[G  m/a]
 lam12[m_, a_, q_]:=Log[2 sig^2/v12[m,a, q]^2]
-aevapRoot[m_?NumericQ,  q_]:=NSolve[0.07 (v12[m, a, q]^2 sig)/(G^2  n M2 lam12[m,a, q])==to, a]
-aevap[m_?NumericQ, q_]:=(a/.aevapRoot[m,  q])
+(*aevapRoot[m_?NumericQ,  q_]:=NSolve[0.07 (v12[m, a, q]^2 sig)/(G^2  n M2 lam12[m,a, q])-to\[Equal]0, a]
+aevap[m_?NumericQ, q_]:=(a/.aevapRoot[m,  q])*)
+ta:=2*0.07*hr^4 Sqrt[ro^3/G/Mbh]/(no ro^3/pc^3)*Mbh^2/M2;
+aevap[m_?NumericQ, q_]:=(E^LambertW[ta/(to)]ro m/Mbh/2/hr^2)
+
 rRoche[q_]:=(0.49 q^(2/3)/(0.6 q^(2/3)+Log[1+q^(1/3)]));
 acontact[m_,q_]:=Max[rinterp[m/Msun/(1+q)]Rsun/rRoche[q^-1], rinterp[m/Msun q/(1+q)]Rsun/rRoche[q]];
 
@@ -94,7 +97,8 @@ If[OptionValue[ECC]=="Uniform", ecc=RandomVariate[UniformDistribution[{0,1}]]];
 {amin, amax}={Max[acontact[m, q]/(1-ecc), agw[m,  q,ecc]],Min[Max[(aevap[m, q]), ahs[m, q]], 100 au]};
 comp=OptionValue[COMPACT];
 If[comp, {amin, amax}={agw[m, q, ecc],Min[Max[(aevap[m, q]), ahs[m, q]], 100 au]}];
-If[amin>=amax, Return["ERR", Module]];
+(*Print[amin,amax];*)
+If[amin>=amax, Return["ERR"]];
 smas=powSamp[1, amin, amax];
 dmin=0;
 If[And[OptionValue[COLL], Not[comp]], dmin=acontact[m, q]/smas];
@@ -121,6 +125,7 @@ out= Hill`getEcc[aa1, \[Phi]1,S1, EVEC->{ecc,0,0}, Q->q, DMIN->dmin, MR->Mbh/m ]
 Options[MC]=Options[smaEmpirical];
 MC[Ntrials_, opts:OptionsPattern[]]:=Module[{dat, dat1, dat2, dat3, names, base, out},
 dat=Table[smaEmpirical[ opts], {i, 1, Ntrials}];
+Print[Length[dat]];
 Print[Position[dat, x_/;x=="ERR"]//Flatten];
 dat=dat[[Complement[Range[1,Length[dat]],Position[dat, x_/;x=="ERR"]//Flatten]]];
 names= { "m", "q", "t0", "x", "y" , "z","vx" , "vy", "vz", "x2", "y2" , "z2","vx2" , "vy2", "vz2"};
@@ -141,6 +146,9 @@ Export[out, dat2];
 out=NotebookDirectory[]<>"trial_end_"<>ToString[base];
 Export[out, dat3];
 ]
+
+
+
 
 
 End[]
