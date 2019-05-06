@@ -111,6 +111,7 @@ S1= RandomChoice[{-1,1}];
 
 ss=Hill`sol[aa1, \[Phi]1, S1, EVEC->{ecc,0,0}];
 tend=(Hill`Private`x/.ss)[[1,1,-1]];
+(*Print[tend];*)
 endState={tend/(-(Hill`Private`xend) Hill`t0[aa1]), Hill`Private`x[tend], Hill`Private`y[tend], Hill`Private`x'[tend], Hill`Private`y'[tend]}/.ss;
 abinAU=smas/au;
 rscale=10^aa1 abinAU;
@@ -123,7 +124,7 @@ out= Hill`getEcc[aa1, \[Phi]1,S1, EVEC->{ecc,0,0}, Q->q, DMIN->dmin, MR->Mbh/m ]
 {i1, Flatten[{10^aa1, \[Phi]1, S1, m/Msun, smas/au, ecc, q, out}], endState}
 ]
 
-Options[MC]=Options[smaEmpirical];
+Options[MC]=Join[Options[smaEmpirical], {OUT->"./"}];
 MC[Ntrials_, opts:OptionsPattern[]]:=Module[{dat, dat1, dat2, dat3, names, base, out},
 dat=Table[smaEmpirical[ opts], {i, 1, Ntrials}];
 Print[Length[dat]];
@@ -140,11 +141,11 @@ names= {"end", "x", "y", "vx", "vy"};
 dat3=dat[[;;,3]];
 dat3=Prepend[dat3, names];
 base="Mbh"<>Cstring[Mbh/Msun]<>"_t"<>Cstring[to/year] <>"_e"<>ToString[OptionValue[ECC]]<>"_coll" <>ToString[OptionValue[COLL]]<>".csv";
-out=NotebookDirectory[]<>"trial_init_"<>ToString[base];
+out=OptionValue[OUT]<>"trial_init_"<>ToString[base];
 Export[out, dat1];
-out=NotebookDirectory[]<>"trial_"<>ToString[base];
+out=OptionValue[OUT]<>"trial_"<>ToString[base];
 Export[out, dat2];
-out=NotebookDirectory[]<>"trial_end_"<>ToString[base];
+out=OptionValue[OUT]<>"trial_end_"<>ToString[base];
 Export[out, dat3];
 ]
 
