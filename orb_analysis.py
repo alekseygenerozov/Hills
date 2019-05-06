@@ -29,7 +29,8 @@ f=open('trial_end_{0}_orb_analysis.csv'.format(base), 'w')
 f.write('row, a, e, ai, ei, S\n')
 
 for idx in range(len(dat)):
-	if filt[idx] or dat_final_pos['t']<0.999:
+	##Consider only disrupted binaries, and discard cases in which the integration stopped short.
+	if filt[idx] or dat_final_pos['t'][idx]<0.999:
 		continue
 	qq=dat[idx]['q']
 	mm=dat[idx]['m']
