@@ -1,6 +1,7 @@
 #!/usr/bin/env wolframscript
 (* ::Package:: *)
 
+AppendTo[$Path, "/home/aleksey/code/mathematica/Hills/"]
 Needs["HardSoft`"]
 $HistoryLength=0;
 
@@ -25,9 +26,10 @@ Print[HardSoft`Private`no]
 Print[HardSoft`Private`Mbh]
 
 Ntrials=2*10^4;
-HardSoft`MC[Ntrials, ECC->"Thermal"]
-HardSoft`MC[Ntrials, ECC->"Thermal", COLL->True]
-HardSoft`MC[Ntrials, ECC->"Uniform"]
-HardSoft`MC[Ntrials, ECC->"Uniform", COLL->True]
-HardSoft`MC[Ntrials, ECC->0]
-HardSoft`MC[Ntrials, ECC->0, COLL->True]
+(*HardSoft`MC[Ntrials, ECC->"Thermal"]*)
+HardSoft`MC[Ntrials, ECC->"Thermal", COLL->True, OUT->"trial_1/"]
+HardSoft`MC[Ntrials, ECC->"Thermal", COLL->True, OUT->"trial_2/"]
+(*HardSoft`MC[Ntrials, ECC->"Uniform"]
+HardSoft`MC[Ntrials, ECC->"Uniform", COLL->True]*)
+(*HardSoft`MC[Ntrials, ECC->0]
+HardSoft`MC[Ntrials, ECC->0, COLL->True]*)
